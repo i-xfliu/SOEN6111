@@ -58,20 +58,20 @@ The listening history dataset is very huge, has 2000k records, which contains a 
 
 Before we starting the algorithm, we can have a look at the dataset distribution. For songs, we can statistic the top k most popular songs, artists, tags, countries and, so on. For users, we can statistic the gender proportions and aged distribution. we can use the MatLab library to visualize those statistic results.
 
-#### Recommendation Algorithm
+### Recommendation Algorithm
 
-1. ##### KNN Item based collaborative filtering 
+1. #### KNN Item based collaborative filtering 
 
    For implementing item-based collaborative filtering, we need two kinds of data, users feature and items feature. Thus we need feature engineering, our plan is to extract song features and user features from the song-tag dataset and user listening history. This is a very preliminary method that will lose the listening sequence information. (这段数据可能有点问题) When data is ready, we can build a song-user matrix and use sklearn.neighbors.NearestNeighbors to train the model.
 
-2. ##### Matrix factorization-based collaborative filtering
+2. #### Matrix factorization-based collaborative filtering
 
    The users listening history is a user behavior dataset, which doesn't explicitly reflect the taste of users, thus it's called implicit feedback. If we use the statistic method to construct user preferences, can lose some information contained in listening history. 
    For implicit feedback, we can use matrix factorization-based collaborative filtering to implement a recommendations system.
 
    We can use spark.mllib.recommendation.ALS model to handle implicit feedback dataset, the model can find latent factors in the listening history dataset.
 
-3. ##### Evaluation
+3. #### Evaluation
 
    We will use some metrics to elevalute the models, such as recall, precise, mAP and AUC.
 
