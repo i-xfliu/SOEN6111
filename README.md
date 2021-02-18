@@ -62,9 +62,7 @@ Before we starting the algorithm, we can have a look at the dataset distribution
 
 1. ##### KNN Item based collaborative filtering 
 
-   For implementing item-based collaborative filtering, we need two kinds of data, users feature and items feature. Thus we need feature engineering, our plan is to extract song features and user features from the song-tag dataset and user listening history. This is a very preliminary method that will lose the listening sequence information. (这段数据可能有点问题)
-
-   When data is ready, we then build song-user matrix and use sklearn.neighbors.NearestNeighbors to train the model.
+   For implementing item-based collaborative filtering, we need two kinds of data, users feature and items feature. Thus we need feature engineering, our plan is to extract song features and user features from the song-tag dataset and user listening history. This is a very preliminary method that will lose the listening sequence information. (这段数据可能有点问题) When data is ready, we can build a song-user matrix and use sklearn.neighbors.NearestNeighbors to train the model.
 
 2. ##### Matrix factorization-based collaborative filtering
 
