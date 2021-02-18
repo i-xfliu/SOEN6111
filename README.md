@@ -50,7 +50,7 @@ Our datasets come from last.fm. There are two parts of dataset,
 
 ### Data Analysis
 
-#### clean data
+#### Clean data
 
 The listening history dataset is very huge, has 2000k records, which contains a large number of not useful data. So the first step is to extract useful data, intersection the listening history and songs dataset, thus we can just keep the history that has responding songs in the songs dataset. After the intersect operation, the listening history dataset is reduced to 800k lines and the songs dataset is reduced to 20k lines.
 
