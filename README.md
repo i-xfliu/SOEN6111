@@ -83,7 +83,9 @@ Before we starting the algorithm, we can have a look at the dataset distribution
 
 ##  Reference
 [1] B.  McFee,  T.  Bertin-Mahieux,  D.  P.  W.  Ellis,  G.  R.  G.  Lanckriet,  The  million  song  datasetchallenge, in: Mille et al. [74], pp. 909–916.
+
 [2] Linden, G., Smith, B. and York, J. (2003). Amazon.com Recommendations Item-to-Item Collaborative Filtering. [ebook] Available at:https://www.cs.umd.edu/~samir/498/Amazon-Recommendations.pdf[Accessed 10 Oct. 2017]
+
 [3] E. Shakirova, "Collaborative filtering for music recommender system," 2017 IEEE Conference of Russian Young Researchers in Electrical and Electronic Engineering (EIConRus), St. Petersburg, 2017, pp. 548-550, doi: 10.1109/EIConRus.2017.7910613.
 
 
