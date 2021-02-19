@@ -1,4 +1,7 @@
 # Don't Stop the Music
+## Abstract
+
+In this project, we design and implement a song recommendation system. To get the analysis data, we use two datasets, Last.fm and  Last. fm  -1K from the Million Song Dataset. Last.fm dataset contains 100k songs information while  Last.fm  -1k provides users' listening history and their brief profile collected from last.fm. We will use the KNN item-based collaborative filtering, which makes recommendations by finding similar songs in a particular user's listening history. To improve the prediction accuracy, we will try the other algorithm, Matrix factorization-based collaborative filtering, which can directly use user-item interaction matrix as training data.
 
 ## Introduction
 
