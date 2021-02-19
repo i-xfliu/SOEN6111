@@ -19,7 +19,7 @@ The data is processed in the offline layer, i.e., using spark and other computin
 
 2) Algorithms implementation: 
 
-We will use the KNN Item-based collaborative filtering, due to our users dataset is a listening history which is implicit feedback, thus for this algorithm, we need to convert this dataset to an explicit feedback dataset. This operation may impact the effect of the recommendation.For this reason, we will try the other algorithm Matrix factorization-based collaborative filtering, which can directly use user-item interaction matrix as training data.
+We will use the KNN Item-based collaborative filtering, due to our users dataset is a listening history which is implicit feedback, thus for this algorithm, we need to convert this dataset to an explicit feedback dataset. This operation may impact the effect of the recommendation. For this reason, we will try the other algorithm Matrix factorization-based collaborative filtering, which can directly use user-item interaction matrix as training data.
 
 3) Evaluation: 
 
@@ -34,7 +34,7 @@ Since recommandation system is a quite mature project, there are many related wo
 
 Our datasets come from last.fm. There are two parts of dataset, 
 
-1. The Last.fm dataset in Million Song Dataset
+1. The Last.fm dataset in Million Song Dataset [4]
 
    http://millionsongdataset.com/lastfm/ , which provides songs metadata and song-level tags datasets.
 
@@ -46,7 +46,7 @@ Our datasets come from last.fm. There are two parts of dataset,
 
    which provides a list of unique tags and a list of song-tag pairs. There are 50K unique tags and each song can have multiple tags. Now, we can get song-level data, used as item dataset  from the above two database.
 
-2. Last.fm Dataset-1k
+2. Last.fm Dataset-1k [5]
 
    http://ocelma.net/MusicRecommendationDataset/lastfm-1K.html, which provides users' listening history  and  users' brief profile collected from last.fm.  The listening history contains almost 2000k lines with <index, user_id, timestamp, artist_id, artist_name, track_id, track_name> tuple, in which has almost 1k users. The user profile data contains 1k users with <userid, gender, age, country, signup time>.
 
@@ -58,7 +58,7 @@ Our datasets come from last.fm. There are two parts of dataset,
 
 The listening history dataset is very huge, has 2000k records, which contains a large number of not useful data. So the first step is to extract useful data, intersection the listening history and songs dataset, thus we can just keep the history that has responding songs in the songs dataset. After the intersect operation, the listening history dataset is reduced to 800k lines and the songs dataset is reduced to 20k lines.
 
-#### The statistics
+#### Data visualization
 
 Before we starting the algorithm, we can have a look at the dataset distribution. For songs, we can statistic the top k most popular songs, artists, tags, countries and, so on. For users, we can statistic the gender proportions and aged distribution. we can use the MatLab library to visualize those statistic results.
 
@@ -66,14 +66,12 @@ Before we starting the algorithm, we can have a look at the dataset distribution
 
 1. #### KNN Item based collaborative filtering 
 
-   For implementing item-based collaborative filtering, we need two kinds of data, users feature and items feature. Thus we need feature engineering, our plan is to extract song features and user features from the song-tag dataset and user listening history. This is a very preliminary method that will lose the listening sequence information. (这段数据可能有点问题) When data is ready, we can build a song-user matrix and use sklearn.neighbors.NearestNeighbors to train the model.
+   For implementing item-based collaborative filtering, we need two kinds of data, users feature and items feature. Feature engineering can help, our plan is to extract song features and user features from the song-tag dataset and user listening history. This is a very preliminary method that will lose the listening sequence information. When data is ready, we can build a song-user matrix and use sklearn.neighbors.NearestNeighbors to train the model.
 
 2. #### Matrix factorization-based collaborative filtering
 
    The users listening history is a user behavior dataset, which doesn't explicitly reflect the taste of users, thus it's called implicit feedback. If we use the statistic method to construct user preferences, can lose some information contained in listening history. 
-   For implicit feedback, we can use matrix factorization-based collaborative filtering to implement a recommendations system.
-
-   We can use spark.mllib.recommendation.ALS model to handle implicit feedback dataset, the model can find latent factors in the listening history dataset.
+   For implicit feedback, we can use matrix factorization-based collaborative filtering to implement a recommendations system. Spark.mllib.recommendation.ALS model is a good choice to handle implicit feedback dataset, the model can find latent factors in the listening history dataset.
 
 3. #### Evaluation
 
@@ -87,6 +85,10 @@ Before we starting the algorithm, we can have a look at the dataset distribution
 [2] Linden, G., Smith, B. and York, J. (2003). Amazon.com Recommendations Item-to-Item Collaborative Filtering. [ebook] Available at:https://www.cs.umd.edu/~samir/498/Amazon-Recommendations.pdf[Accessed 10 Oct. 2017]
 
 [3] E. Shakirova, "Collaborative filtering for music recommender system," 2017 IEEE Conference of Russian Young Researchers in Electrical and Electronic Engineering (EIConRus), St. Petersburg, 2017, pp. 548-550, doi: 10.1109/EIConRus.2017.7910613.
+
+[4] Thierry Bertin-Mahieux, Daniel P.W. Ellis, Brian Whitman, and Paul Lamere, June 14, 2016, "Million Song Dataset", IEEE Dataport, doi: https://dx.doi.org/10.5072/FK27D2W31V.
+
+[5] last.fm, https://www.last.fm/home
 
 
 
