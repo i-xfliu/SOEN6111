@@ -24,7 +24,16 @@ We will use the KNN Item-based collaborative filtering, due to our users dataset
 3) Evaluation: 
 
 We will use some metrics to elevalute the models, such as recall, precise, mAP and AUC.
+### Problems to solve
+We consider the following factors as a checklist while conducting the project (problems to solve):
 
+Data cleaning. For example, some NaN data and obvious incorrect data should be removed. Those who listened to a variety of music without specific taste should be opt-out.
+
+Model calculation. The similarity of the two users should be calculated thus to make the comparison.
+
+Improve the prediction. We would love to try the other algorithm Matrix factorization-based collaborative filtering, which can directly use user-item interaction matrix as training data.
+
+### Related Work
 Since recommandation system is a quite mature project, there are many related works done by researchers and developers. McFee et al. intrdouced the Million Song Dataset Challenge in 2012[1]. Amazon uses their own algorithm, item-to-item collab-orative filtering, which online computation scales independently of the number of customers andnumber of items in the product catalog [2]. In [3], Elena Shakirova had an investigation of using collaborative filtering techniques for a music recommender system and found the best result for non-trivial α=0.15 and q=3 in the item-based case, α=0.3 and q=5 in the user-based case.
 
 
