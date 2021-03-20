@@ -142,6 +142,7 @@ class load_lastfm_1k(object):
         sd.to_parquet(save_filepath, compression={"name": "gzip", "values": "snappy"})
         df_user_track.to_parquet(save_filepath, compression='snappy', index=False)
 
+
     def load_useful_history(self):
         path = 'lastfm_dataset/useful_history_1k.parquet'
         df = self.spark.read.parquet(path)
@@ -168,11 +169,14 @@ class load_lastfm_1k(object):
 
 
 
-# load_lastfm_1k().load_user_history()
+
 # load_lastfm_1k().load_history_song_set_parquet()
 # load_lastfm_1k().extract_common_song_info()
 # load_lastfm_1k().write_lastfm_common_songs_to_parquet()
 # load_lastfm_1k().extract_useful_history_to_parquet()
+# load_lastfm_1k().load_user_history()
+
+# load_lastfm_1k().load_userid_profile()
 # load_lastfm_1k().load_useful_history()
 # load_lastfm_1k().load_lastfm_common_songs_parquet()
 
