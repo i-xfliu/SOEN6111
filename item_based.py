@@ -9,17 +9,6 @@ from pyspark import SparkConf, SparkContext
 from pyspark.sql import SparkSession
 
 
-def loadMovieNames():
-    '''
-    Parse through the u.item file and extracts movie and user information
-    '''
-    movieNames= {}
-    with open("ml-100k/u.item") as f:
-        for line in f:
-            fields= line.split('|')
-            movieNames[int(fields[0])] = fields[1]
-    return movieNames
-
 def pairbyuser(line):
     return line[0],(line[1],float(line[2]))
 
@@ -46,10 +35,10 @@ def findUserPairs(item_id,users_with_rating):
     for user1,user2 in combinations(users_with_rating,2):
         return (user1[0],user2[0]),(user1[1],user2[1])
 
-def keyOfFirstItem(movie_pair, movie_sim_data):
+def combine_item_similarity(track_pair, track_sim_data):
 
-    (movie1_id,movie2_id) = movie_pair
-    return movie1_id,(movie2_id,movie_sim_data)
+    (track1_id,track2_id) = track_pair
+    return track1_id,(track2_id,track_sim_data)
 
 def cosineSimilarity(track_pair, rating_pairs):
     sum_x, sum_xy, sum_y= (0.0, 0.0, 0.0)
@@ -77,7 +66,7 @@ def nearNeighbors(movie_id, movie_and_sims, number):
     movie_and_sims.sort(key = lambda x: x[1],reverse=True)
     return movie_id, movie_and_sims[:number]
 
-def topMovieRecommendations(user_id, movie_with_rating, movie_sims, n):
+def topMusicRecommendations(user_id, track_and_rating, dict_similar_track, n):
     '''
     Calculate the top N movie recommendations for each user using the
     weighted sum approach
@@ -87,34 +76,34 @@ def topMovieRecommendations(user_id, movie_with_rating, movie_sims, n):
     t = defaultdict(int)
     sim_sum = defaultdict(int)
 
-    for (movie,rating) in movie_with_rating:
+    for (track, rating) in track_and_rating:
 
-        # lookup the nearest neighbors for this movie
-        near_neigh = movie_sims.get(movie,None)
+        # get the nearst k tracks from the dict
+        list_near_tracks = dict_similar_track.get(track,None)
 
-        if near_neigh:
-            for (neigh,(sim,count)) in near_neigh:
-                if neigh != movie:
+        if list_near_tracks:
+            for (near_track,(sim,count)) in list_near_tracks:
+                if near_track != track:
 
                     # update totals and sim_sum
-                    t[neigh] += sim * rating
-                    sim_sum[neigh] += sim
+                    t[near_track] += sim * rating
+                    sim_sum[near_track] += sim
 
     # create the normalized list of scored movies
-    scored_movies = [(total/sim_sum[movie],movie) for movie,total in t.items()]
+    scored_track = [(total/sim_sum[track],track) for track,total in t.items()]
 
     # sort the scored movies in ascending order
-    scored_movies.sort(reverse=True)
+    scored_track.sort(reverse=True)
 
 
     # ranked_items = [x[1] for x in scored_items]
 
-    return user_id,scored_movies[:n]
+    return user_id,scored_track[:n]
 
 def toCSVLine(data):
   return ','.join(str(d) for d in data)
 
-limit = 5
+limit = 5 # limit to be selected
 k = 10 # k for knn
 def init_spark():
     spark = SparkSession \
@@ -130,41 +119,39 @@ def count_iterable(i):
 def pairlist(list):
     return list[0],list[1]
 
+def item_based_process(spark, parts):
+    # why pair by user? to ensure the track was listened by the same user
+    user_pairs = parts.map(pairbyuser).groupByKey()
+    # two track id as key, and rating pairs as value
+    track_pairs_final = user_pairs.filter(lambda pair: count_iterable(pair[1]) > 1).flatMap(
+        lambda pair: gettrackpairs(pair[1])).groupByKey()
+
+    # track_pairs_final = dff.map(lambda x: pairlist(x)).groupByKey()
+    # after groupByKey, the value is all the rating pairs from users who listened the two tracks(two track id is the key)
+    # if common user number between the track pair less than limit, ignore
+    track_sim = track_pairs_final.filter(lambda pair: count_iterable(pair[1]) > limit).map(
+        lambda pair: cosineSimilarity(pair[0], pair[1]))
+    #
+    track_sim_finally = track_sim.map(
+        lambda pair: combine_item_similarity(pair[0], pair[1])).groupByKey() \
+        .map(lambda x: (x[0], list(x[1])))
+
+    list_track_sim_knn = track_sim_finally.map(
+        lambda pair: nearNeighbors(pair[0], pair[1], k)).collect()
+
+    dict_similar_track = {}
+    for (track, data) in list_track_sim_knn:
+        dict_similar_track[track] = data
+    i = spark.sparkContext.broadcast(dict_similar_track)
+    user_music_rec = user_pairs.map(
+        lambda p: topMusicRecommendations(p[0], p[1], i.value, 3)).collect()
+
+
+
+
 def test():
     spark = init_spark()
     lines = spark.read.text('./sample_movielens_ratings.txt').rdd
     parts = lines.map(lambda row: row.value.split("::"))
-    # why pair by user? to ensure the track was listened by the same user
-    user_pairs = parts.map(pairbyuser).groupByKey()
-    # two track id as key, and rating pairs as value
-    track_pairs = user_pairs.filter(lambda pair: count_iterable(pair[1]) > 1).map(
-        lambda pair: gettrackpairs(pair[1]))
-    collect_list = track_pairs.collect()
-    all_list = []
-    for element in collect_list:
-        all_list = all_list + element
-    dff = spark.sparkContext.parallelize(all_list)
-    track_pairs_final = dff.map(lambda x: pairlist(x)).groupByKey()
-    # after groupByKey, the value is all the rating pairs from users who listened the two tracks(two track id is the key)
-    #if common user number between the track pair less than limit, ignore
-    track_sim = track_pairs_final.filter(lambda pair: count_iterable(pair[1]) > limit).map(
-        lambda pair: cosineSimilarity(pair[0], pair[1]))
-
-    track_sim_finally = track_sim.map(
-        lambda pair: keyOfFirstItem(pair[0], pair[1])).groupByKey()\
-        .map(lambda x : (x[0], list(x[1])))
-
-    movie_sim = track_sim_finally.map(
-        lambda pair: nearNeighbors(pair[0], pair[1], k)).collect()
-
-    movie_sim_dict = {}
-    for (movie, data) in movie_sim:
-        movie_sim_dict[movie] = data
-    i = spark.sparkContext.broadcast(movie_sim_dict)
-    user_movie_recs = user_pairs.map(
-        lambda p: topMovieRecommendations(p[0], p[1], i.value, 3)).collect()
-    nameDict = loadMovieNames()
-
-    result = user_movie_recs
-    movieList = list()
+    item_based_process(spark, parts)
 
