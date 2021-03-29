@@ -7,8 +7,22 @@ from pyspark.sql.functions import col
 
 #most pupular songs history subset
 
-# 1.select most 5000 popular songs
-# 2. according to the popular songs set, select users which have enough listening history
+#  "lastfm_dataset/top_20_percent_song_history.parquet"
+#   extract the subset of listening history
+#   top 20% popular songs listening history
+#   history num : 7255562
+#   track num: 33556
+#   user num: 990
+
+def init_spark(self):
+    spark = SparkSession \
+        .builder \
+        .appName("Python Spark SQL basic example") \
+        .config("spark.some.config.option", "some-value") \
+        .getOrCreate()
+    return spark
+
+spark = init_spark(object)
 
 def load_most_popular_songs_set(k):
     # top k songs
@@ -22,23 +36,61 @@ def load_most_popular_songs_set(k):
     song_groupby = song_groupby.limit(k)
     return song_groupby
 
-def load_most_active_users_history():
+def load_most_popular_song_listen_history():
     #20% songs
     history_df = load_lastfm_1k().load_useful_history()
     song_groupby = history_df.groupby('track_id', 'track_name').count().orderBy(col("count").desc())
     songs_top_20_percents = song_groupby.limit(round(song_groupby.count()*0.2))
-    print("songs_top_20_percents: %d"%songs_top_20_percents.count())
-    users_listen_top_song= history_df.join(songs_top_20_percents,['track_id']).groupby('user_id').count().orderBy(col("count").desc())
-    users_listen_top_song.show()
-    users_top_20_percents = users_listen_top_song.limit(round(users_listen_top_song.count()*0.2))
-    print("users_top_20_percents: %d" % users_top_20_percents.count())
-    users_top_20_percents.show()
+
     history_df = history_df.join(songs_top_20_percents.select('track_id'),['track_id'])
-    history_df = history_df.join(users_top_20_percents.select('user_id'),['user_id'])
     print("history_df: %d" % history_df.count())
     history_df = history_df.select('index', 'user_id', 'timestamp', 'artist_id', 'artist_name', 'track_id', 'track_name')
     history_df.show()
+    # history_df.write.parquet("lastfm_dataset/top_20_percent_song_history.parquet")
     return history_df
+
+
+
+def load_top_20_song_history():
+
+    history_df = spark.read.parquet("lastfm_dataset/top_20_percent_song_history.parquet")
+    history_df.show()
+    print("history num : %d"%history_df.count())
+    print("track num: %d"%history_df.select('track_id').distinct().count())
+    print("user num: %d"%history_df.select('user_id').distinct().count())
+    # history num : 7255562
+    # track num: 33556
+    # user num: 990
+    # +-------+-----------+--------------------+--------------------+-------------+--------------------+------------+
+    # |  index|    user_id|           timestamp|           artist_id|  artist_name|            track_id|  track_name|
+    # +-------+-----------+--------------------+--------------------+-------------+--------------------+------------+
+    # |1834219|user_000089|2006-11-08 18:51:...|000fc734-b7e1-4a0...|Cocteau Twins|a95098a9-d0a9-434...|Aikea-Guinea|
+    # |2667533|user_000135|2007-02-16 10:51:...|000fc734-b7e1-4a0...|Cocteau Twins|a95098a9-d0a9-434...|Aikea-Guinea|
+    # |2665841|user_000135|2007-03-23 13:27:...|000fc734-b7e1-4a0...|Cocteau Twins|a95098a9-d0a9-434...|Aikea-Guinea|
+    # |3260229|user_000159|2007-01-18 19:28:...|000fc734-b7e1-4a0...|Cocteau Twins|a95098a9-d0a9-434...|Aikea-Guinea|
+
+
+    history_df = spark.read.parquet("lastfm_dataset/top_20_Percent_song_fractional_intID_history.parquet")
+    history_df.show()
+    print("user-track pair num： : %d"%history_df.count())
+    print("track num: %d"%history_df.select('track_id').distinct().count())
+    print("user num: %d"%history_df.select('user_id').distinct().count())
+    # user-track pair num : 861902
+    # track num: 33556
+    # user num: 990
+    # +-----------+--------------------+-------+--------+-----+--------------------+
+    # |    user_id|            track_id|id_user|id_track|count|    fractional_count|
+    # +-----------+--------------------+-------+--------+-----+--------------------+
+    # |user_000577|008bf805-efd3-448...|      0|   10657|    1|2.065987645393880...|
+    # |user_000706|008bf805-efd3-448...|     14|   10657|    1|1.234415504258733...|
+    # |user_000112|008bf805-efd3-448...|     27|   10657|    1|1.731002250302925...|
+    # |user_000670|008bf805-efd3-448...|     94|   10657|    3|4.447079750963534E-4|
+
+
+
+    history_df = spark.read.parquet("lastfm_dataset/top_2_Percent_song_history.parquet")
+    print(history_df.select('track_id').distinct().count()) #3381
+    print(history_df.select('user_id').distinct().count()) #984
 
 
 
@@ -51,3 +103,6 @@ def load_most_active_users_history():
 # load_most_popular_songs_set(1000)
 
 # load_most_active_users_history()
+
+
+# load_top_20_song_history()
