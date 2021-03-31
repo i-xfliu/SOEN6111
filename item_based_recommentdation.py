@@ -41,19 +41,24 @@ class item_based_recommentdation(object):
     def generate_user_items_model(self):
         self.df = spark.read.parquet("lastfm_dataset/top_20_Percent_song_fractional_intID_history.parquet")
         (self.training, self.test) = self.df.randomSplit([0.8, 0.2], seed=100)
-        self.training.show()
         self.train_matrix = self.get_matrix(self.training)
-        self.train_matrix.show()
+
 
         # 根据test set 整理出一个song matrix vector*n
-        self.test = self.test.limit(1000)
-        self.test_matrix = self.get_matrix(self.test)
+        self.test = self.test.limit(2000)
+        self.test.groupby('id_user').count().show()
+
+        # self.test_matrix = self.get_matrix(self.test)
+        # test 应该从train_matrix中找到相应track的 id
+        self.test_matrix = self.train_matrix.join(self.test,['id_track']).select('id_track','features')
+        print("test matrix")
+        self.test_matrix.show();
+
 
         brp = BucketedRandomProjectionLSH(inputCol="features", outputCol="hashes", bucketLength=2.0,
                                           numHashTables=3)
         self.model = brp.fit(self.train_matrix)
 
-        # # # 选取user x 听过的item
         self.model.transform(self.train_matrix)
 
 
@@ -90,6 +95,7 @@ class item_based_recommentdation(object):
 
         # 历史数据加上feature
         matrix_df = train_df.join(train_maxtrix, ['id_track'])
+        print("get_test_all_user_items_pair")
         matrix_df.show()
         # +--------+-------+-----+--------------------+
         # |id_track|id_user|count|            features|
@@ -173,6 +179,7 @@ class item_based_recommentdation(object):
                                  ).where(col('user_listen') != col('test_song'))
 
         window = Window.partitionBy('id_user', 'test_song').orderBy('distCol')
+        # 选取相识度最小的两首歌
         similar = similar.select('*', rank().over(window).alias('rank')).filter(col('rank') <= 2)
         # id_user|user_listen|count|test_song|           distCol|rank|
         #      19|      20608|    1|     4590|               7.0|   1|
@@ -182,7 +189,7 @@ class item_based_recommentdation(object):
         score_df = similar.withColumn('score', 1 / col('distCol') * col('count')).groupby('id_user', 'test_song').agg(
             avg('score').alias('score'))
         print(score_df.count())
-        score_df.write.parquet("model/4-similar_score_1000test.parquet")
+        # score_df.write.parquet("model/similar_score_2000test.parquet")
 
         score_df.sort('id_user').show()
         self.evaluate(score_df, self.test)
@@ -193,16 +200,26 @@ class item_based_recommentdation(object):
     def evaluate(self,predictions, test_df):
         # predictions 没有标记哪首歌是test集中真的有听得
         rank = predictions.withColumn('rank', row_number().over(Window.partitionBy('id_user').orderBy(desc('score'))))
-        rank.show()
-        test_df.show()
 
         cond = [rank.id_user == test_df.id_user, rank.test_song == test_df.id_track]
         predictions = rank.join(test_df, cond, how='left').drop(test_df.id_user).fillna(0)
 
+
         print("MPR step 1")
         print(predictions.count())
         # test1.filter(test1['id_user'] == 26).show()
-        print(predictions.show())
+        listend_song = predictions.where(col('count') > 0).groupby('id_user').agg(count('*').alias('listened_song'))
+        nolistend_song = predictions.where(col('count') == 0).groupby('id_user').agg(count('*').alias('not_listened'))
+        listend_song.join(nolistend_song, on=['id_user']).show()
+
+        predictions.where(col('id_user') == 498).sort(col("rank")).show()
+        predictions.where(col('id_user') == 754).sort(col("rank")).show()
+        predictions.where(col('id_user') == 443).sort(col("rank")).show()
+        predictions.where(col('id_user') == 304).sort(col("rank")).show()
+        predictions.where(col('id_user') == 871).sort(col("rank")).show()
+        predictions.where(col('id_user') == 181).sort(col("rank")).show()
+        predictions.where(col('id_user') == 621).sort(col("rank")).show()
+
 
         n_tracks = test_df.select('id_track').distinct().count()
         # predictions.withColumn('rank', row_number().over(Window.partitionBy('id_user').orderBy(desc('score'))))
@@ -227,7 +244,8 @@ class item_based_recommentdation(object):
         MPR.show()
 
     def load_and_evalaute__similar_matrix(self):
-        score_df = spark.read.parquet("model/similar_score_1000test.parquet")
+        # score_df = spark.read.parquet("model/similar_score_1000test.parquet")
+        score_df = spark.read.parquet("model/similar_score_2000test.parquet")
         self.evaluate(score_df, self.test)
 
 
