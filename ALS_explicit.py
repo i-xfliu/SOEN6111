@@ -78,17 +78,14 @@ def ALS_fractional_count():
     df = spark.read.parquet("lastfm_dataset/top_20_Percent_song_fractional_intID_history.parquet")
     df.show()
     (training, test) = df.randomSplit([0.8, 0.2],seed=100)
-    # 加normalize
+    test = test.limit(2000)
 
     als = ALS(maxIter=5, regParam=0.01, userCol="id_user", itemCol="id_track", ratingCol="fractional_count", implicitPrefs=False,
               coldStartStrategy="drop")
     model = als.fit(training)
 
-    model.save("model/als_explicit_top20per_song.model")
+    # model.save("model/als_explicit_top20per_song.model")
 
-    predictions = model.transform(test)
-
-    test = test.limit(2000)
     # 扩展test set
     # test中有 n tracks，每个user有n条记录，（user1 track1 收听过）（user1 track2 没收听过） 。。。。
 
@@ -99,22 +96,24 @@ def ALS_fractional_count():
             .fillna(0, subset=['fractional_count'])
             .cache()
     )
-    print(test_full.filter((test_full['fractional_count'] == 0) & (test_full['id_user'] == 26)).count())
-    print(test_full.filter((test_full['fractional_count'] > 0) & (test_full['id_user'] == 26)).count())
-    listend_song =  test_full.where(col('fractional_count') > 0).groupby('id_user').count().alias('listend_song')
-    nolistend_song = test_full.where(col('fractional_count') == 0).groupby('id_user').count().alias('nolistend_song')
+
+    predictions = model.transform(test_full)
+    print("user num: %d"%test.select("id_user").distinct().count())
+    print("song num: %d"%test.select("id_track").distinct().count())
+
+
+    listend_song =  test_full.where(col('count') > 0).groupby('id_user').agg(count('*').alias('listened_song'))
+    nolistend_song = test_full.where(col('count') == 0).groupby('id_user').agg(count('*').alias('not_listened'))
     listend_song.join(nolistend_song,on=['id_user']).show()
 
     evaluate(predictions,test_full)
 
 
-
 def evaluate(predictions,test_full):
     test1 = predictions.withColumn('rank', row_number().over(Window.partitionBy('id_user').orderBy(desc('prediction'))))
     print("MPR step 1")
-    print(test1.count())
-    test1.sort(col("count").desc()).show()
-    test1.where(col('id_user') == 754).sort(col("rank")).show()
+    test1.where(col('id_user') == 541).sort(col("rank")).show()
+    test1.where(col('id_user') == 181).sort(col("rank")).show()
 
 
     n_tracks = test_full.select('id_track').distinct().count()
@@ -159,7 +158,7 @@ def loading_and_evaluate_model():
 
     listend_song =  test_full.where(col('fractional_count') > 0).groupby('id_user').agg(count('*').alias('listened_song'))
     nolistend_song = test_full.where(col('fractional_count') == 0).groupby('id_user').agg(count('*').alias('not_listened'))
-    listend_song.join(nolistend_song,on=['id_user']).show()
+    listend_song.join(nolistend_song,['id_user']).show()
 
 
     predictions = model.transform(test_full)
@@ -168,7 +167,7 @@ def loading_and_evaluate_model():
 
 
 # train a new model
-# ALS_fractional_count()
+ALS_fractional_count()
 
 # loading from model file
-loading_and_evaluate_model()
+# loading_and_evaluate_model()

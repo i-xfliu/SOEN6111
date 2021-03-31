@@ -30,9 +30,11 @@ spark = init_spark()
 def evaluate(predictions,test_full):
     test1 = predictions.withColumn('rank', row_number().over(Window.partitionBy('id_user').orderBy(desc('prediction'))))
     print("MPR step 1")
-    print(test1.count())
-    test1.sort(col("count").desc()).show()
-    test1.where(col('id_user') == 754).sort(col("rank")).show()
+    # print(test1.count())
+    # test1.sort(col("count").desc()).show()
+    test1.where(col('id_user') == 541).sort(col("rank")).show()
+    test1.where(col('id_user') == 181).sort(col("rank")).show()
+
 
     n_tracks = test_full.select('id_track').distinct().count()
     MPR = predictions.withColumn('rank', row_number().over(Window.partitionBy('id_user').orderBy(desc('prediction')))) \
@@ -68,7 +70,7 @@ def ALS_trainImplicit():
 
     model = als.fit(training)
 
-    model.save("model/als_implicit_top20per_song.model")
+    # model.save("model/als_implicit_top20per_song.model")
 
 
     test = test.limit(2000)
@@ -84,14 +86,13 @@ def ALS_trainImplicit():
             .cache()
     )
 
+    listend_song =  test_full.where(col('count') > 0).groupby('id_user').agg(count('*').alias('listened_song'))
+    nolistend_song = test_full.where(col('count') == 0).groupby('id_user').agg(count('*').alias('not_listened'))
+    listend_song.join(nolistend_song,on=['id_user']).show()
+
     predictions = model.transform(test_full)
     evaluate(predictions,test_full)
 
-
-    # evaluator = RegressionEvaluator(metricName="rmse", labelCol="count",
-    #                                 predictionCol="prediction")
-    # rmse = evaluator.evaluate(predictions)
-    # print("Root-mean-square error = " + str(rmse))
 
 def loading_and_evaluate_model():
     df = spark.read.parquet("lastfm_dataset/top_20_Percent_song_fractional_intID_history.parquet")
@@ -127,7 +128,7 @@ def loading_and_evaluate_model():
 
 
 # train a new model
-# ALS_trainImplicit()
+ALS_trainImplicit()
 
 # loading from model file
-loading_and_evaluate_model()
+# loading_and_evaluate_model()
