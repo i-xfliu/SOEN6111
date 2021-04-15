@@ -66,67 +66,9 @@ Our datasets come from last.fm. There are two parts of dataset,
 1. #### Data cleaning
 
    The listening history dataset is very huge, has 2000k records, which contains a large number of not useful data. So the first step is to extract useful data, intersection the listening history and songs dataset, thus we can just keep the history that has responding songs in the songs dataset. After the intersect operation, the listening history dataset is reduced to 800k lines and the songs dataset is reduced to 20k lines.
+
    After data cleaning and extraction, we got a track metadata file, a play history data file, and a user profile data file. 
-   
-2. #### Data visualization
-
-   Before we starting the algorithm, we can have a look at the dataset distribution. For songs, we can statistic the top k most popular songs, artists, tags, countries and, so on. For users, we can statistic the gender proportions and aged distribution. we can use the MatLab library to visualize those statistic results.
-   
-   
-   
-
-
-### Recommendation Algorithm
-
-1. #### Item-based recommendation engine
-
-   For implementing item-based collaborative filtering, we need two kinds of data, users feature and items feature. Feature engineering can help, our plan is to extract song features and user features from the song-tag dataset and user listening history. When data is ready, we can build a song-user matrix.
-
-   We used pyspark to implement the item-based recommendation model. 
-
-   ·  Building a utility matrix
-
-   ```
-   rdd = df.rdd.map(lambda x: (x.id_track, [(x.id_user, 1)]))
-   rdd = rdd.reduceByKey(lambda a, b: a + b)
-   rdd = rdd.map(lambda x: (x[0], SparseVector(1000, x[1])))
-   matrix = spark.createDataFrame(rdd, ['id_track', 'features'])
-   ```
-      <img src="assets/Building_a_utility_matrix.png" width = "70%" />
-
-   If user1 has listened to track1 then unit[track1, user1] set as 1, otherwise set as 0. Because the feature rows are long and sparse, so we use the sparse vector for it.
-
-   ·   Computing similarity of songs
-
-   Considering the scale of the dataset and evaluation metric, we used the function approxSimilarityJoin() in the pyspark to compute the similarity of all recommended songs with other songs for all test users in one go.
-      <img src="assets/approxSimilarityJoin.png" width = "70%" />
-
-   ·   Computing the score for recommendation
-
-   For each recommended song, we select k most similar songs to compute the score.
-      <img src="assets/similarity.png" width = "60%" />
-
-   
-
-   
-
-   
-
-   
-
-2. #### Matrix factorization-based collaborative filtering
-
-   The users listening history is a user behavior dataset, which doesn't explicitly reflect the taste of users, thus it's called implicit feedback. If we use the statistic method to construct user preferences, can lose some information contained in listening history. 
-   For implicit feedback, we can use matrix factorization-based collaborative filtering to implement a recommendations system. Spark.mllib.recommendation.ALS model is a good choice to handle implicit feedback dataset, the model can find latent factors in the listening history dataset.
-
-3. #### Evaluation
-
-   We will use some metrics to elevalute the models, such as recall, precise, mAP and AUC.
-
-## Results
-
-### Data Analysis
-In this project, for now, we just used the play history data to build recommendation systems.
+   In this project, for now, we just used the play history data to build recommendation systems.
    The original listening history data
 
 
@@ -142,16 +84,70 @@ In this project, for now, we just used the play history data to build recommenda
    The play history dataset is an “implicit feedback” dataset, which reflects users’ behavior, but not explicitly provides the rating of various songs from users. We adopt a simple solution that is using fractional count as the rating. Fractional count in the range of [0,1], which can measure the strength of “likeness” for a song for a user.
 
    <img src="assets/Fractional_count.png" width = "50%" />
+   
+2. #### Data visualization
 
-   ### Data visualization
+   Before we starting the algorithm, we can have a look at the dataset distribution. For songs, we can statistic the top k most popular songs, artists, tags, countries and, so on. For users, we can statistic the gender proportions and aged distribution. we can use the MatLab library to visualize those statistic results.
+   
+   
+   
+### Recommendation Algorithm
+
+1. #### Item-based recommendation engine
+
+   For implementing item-based collaborative filtering, we need two kinds of data, users feature and items feature. Feature engineering can help, our plan is to extract song features and user features from the song-tag dataset and user listening history. When data is ready, we can build a song-user matrix.
+
+   We used pyspark to implement the item-based recommendation model. 
+
+   ##### Building a utility matrix
+
+   ```
+   rdd = df.rdd.map(lambda x: (x.id_track, [(x.id_user, 1)]))
+   rdd = rdd.reduceByKey(lambda a, b: a + b)
+   rdd = rdd.map(lambda x: (x[0], SparseVector(1000, x[1])))
+   matrix = spark.createDataFrame(rdd, ['id_track', 'features'])
+   ```
+      <img src="assets/Building_a_utility_matrix.png" width = "70%" />
+
+   If user1 has listened to track1 then unit[track1, user1] set as 1, otherwise set as 0. Because the feature rows are long and sparse, so we use the sparse vector for it.
+
+   ##### Computing similarity of songs
+
+   Considering the scale of the dataset and evaluation metric, we used the function approxSimilarityJoin() in the pyspark to compute the similarity of all recommended songs with other songs for all test users in one go.
+
+      <img src="assets/approxSimilarityJoin.png" width = "70%" />
+
+   ##### Computing the score for recommendation
+
+   For each recommended song, we select k most similar songs to compute the score.
+   
+      <img src="assets/similarity.png" width = "60%" />
+
+   
+
+2. #### Matrix factorization-based collaborative filtering
+
+   The users listening history is a user behavior dataset, which doesn't explicitly reflect the taste of users, thus it's called implicit feedback. If we use the statistic method to construct user preferences, can lose some information contained in listening history. 
+   For implicit feedback, we can use matrix factorization-based collaborative filtering to implement a recommendations system. Spark.mllib.recommendation.ALS model is a good choice to handle implicit feedback dataset, the model can find latent factors in the listening history dataset.
+
+3. #### Evaluation
+
+   We will use some metrics to elevalute the models, such as recall, precise, mAP and AUC.
+
+## Results
+
+### Data visualization
+
    ·   Top 15 popular songs
    
-   <img src="assets/Top_15_popular_songs.png" width = "70%" />
+   <img src="assets/Top_15_popular_songs.png" width = "65%" />
    
    ·   User play count distribution
+
    <img src="assets/User_play_count_distribution.png" width = "70%" />
 
    ·   Track play count distribution
+
    <img src="assets/track_play_count_distribution.png" width = "70%" />
 
    
