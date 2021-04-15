@@ -92,24 +92,19 @@ Our datasets come from last.fm. There are two parts of dataset,
    rdd = rdd.map(lambda x: (x[0], SparseVector(1000, x[1])))
    matrix = spark.createDataFrame(rdd, ['id_track', 'features'])
    ```
-
-      ![Building_a_utility_matrix](assets/Building_a_utility_matrix.png)
+      <img src="assets/Building_a_utility_matrix.png" width = "80%" />
 
    If user1 has listened to track1 then unit[track1, user1] set as 1, otherwise set as 0. Because the feature rows are long and sparse, so we use the sparse vector for it.
 
    ·   Computing similarity of songs
 
    Considering the scale of the dataset and evaluation metric, we used the function approxSimilarityJoin() in the pyspark to compute the similarity of all recommended songs with other songs for all test users in one go.
-
-      ![approxSimilarityJoin](assets/approxSimilarityJoin.png)
-
-   
+      <img src="assets/approxSimilarityJoin.png" width = "80%" />
 
    ·   Computing the score for recommendation
 
    For each recommended song, we select k most similar songs to compute the score.
-
-      ![similarity](assets/similarity.png)
+      <img src="assets/similarity.png" width = "70%" />
 
    
 
@@ -134,36 +129,31 @@ Our datasets come from last.fm. There are two parts of dataset,
 In this project, for now, we just used the play history data to build recommendation systems.
    The original listening history data
 
-   ![The original listening history data](assets/the_original_listening_history_data.png)
 
-   
-
-   
+   <img src="assets/the_original_listening_history_data.png" width = "80%" />
 
    Because the dataset is too huge to fit our computer, so the first step of the data analysis is extracting the play history of the most popular songs. We extract 20% of top popular songs’ history. The next step is aggregating the play count by group by (user id, track id). Then we got a data file as below: (user, track, play_count)
 
-   ![play count dataset](assets/playcount_dataset.png)
-
+   <img src="assets/playcount_dataset.png" width = "80%" />
    
 
    Fractional count
 
    The play history dataset is an “implicit feedback” dataset, which reflects users’ behavior, but not explicitly provides the rating of various songs from users. We adopt a simple solution that is using fractional count as the rating. Fractional count in the range of [0,1], which can measure the strength of “likeness” for a song for a user.
-
-   ![Fractional_count](assets/Fractional_count.png)
+   
+   <img src="assets/Fractional_count.png" width = "60%" />
 
    ### Data visualization
    ·   Top 15 popular songs
    
-   ![Top_15_popular_songs](assets/Top_15_popular_songs.png)
+   <img src="assets/Top_15_popular_songs.png" width = "80%" />
    
    ·   User play count distribution
-   
-   ![User_play_count_distribution](assets/User_play_count_distribution.png)
-   
+   <img src="assets/User_play_count_distribution.png" width = "80%" />
+
    ·   Track play count distribution
-   
-   ![track_play_count_distribution](assets/track_play_count_distribution.png)
+   <img src="assets/track_play_count_distribution.png" width = "80%" />
+
    
 
 
