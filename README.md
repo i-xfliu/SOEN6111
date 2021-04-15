@@ -149,9 +149,11 @@ In this project, for now, we just used the play history data to build recommenda
    <img src="assets/Top_15_popular_songs.png" width = "70%" />
    
    ·   User play count distribution
+   
    <img src="assets/User_play_count_distribution.png" width = "70%" />
 
    ·   Track play count distribution
+   
    <img src="assets/track_play_count_distribution.png" width = "70%" />
 
    
