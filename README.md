@@ -53,22 +53,21 @@ Our datasets come from last.fm. There are two parts of dataset,
 
    There are 2000k records in the Last.fm dataset, which contains a large number of not useful data. So the first step is to extract useful data, intersection the listening history and songs dataset, thus keepping the history that has responding songs in the songs dataset. After the intersect operation, the listening history dataset is reduced to 800k lines and the songs dataset is reduced to 20k lines.
 
-   After data cleaning and extraction, we got a track metadata file, a play history data file, and a user profile data file. 
-   In this project, for now, we just used the play history data to build recommendation systems.
-   <img src="assets/the_original_listening_history_data.png" width = "70%" />
-   |  Fig1 The original listening history data  |
-|--|--|
+   After data cleaning and extraction, we got a track metadata file, a play history data file, and a user profile data file. In this project, for now, we just used the play history data to build recommendation systems.
+   
+   <img src="assets/the_original_listening_history_data.png" width = "70%" align = "center"/>
+   <div align = "center"> Fig.1 The original listening history data </div>
 
-   Because the dataset is too huge to fit our computer, so the first step of the data analysis is extracting the play history of the most popular songs. We extract 20% of top popular songs’ history. The next step is aggregating the play count by group by (user id, track id). Then we got a data file as below: (user, track, play_count)
-
-   <img src="assets/playcount_dataset.png" width = "65%" />
+   Since the dataset is too huge to fit our computer, the first step of the data analysis is extracting the play history of the most popular songs. We extract 20% of top popular songs’ history. The next step is aggregating the play count by group by (user id, track id). Then we got a data file as below: (user, track, play_count).
+   
+   <img src="assets/playcount_dataset.png" width = "70%" align = "center"/>
+   <div align = "center"> Fig.2 trimmed dataset </div>
    
 
-   Fractional count
+   The playing history dataset is an "implicit feedback" dataset, which reflects users’ behavior, but not explicitly provides the rating of various songs from users. We adopt a simple solution that is using fractional count as the rating. Fractional count in the range of [0,1], which can measure the strength of “likeness” for a song for a user.
 
-   The play history dataset is an “implicit feedback” dataset, which reflects users’ behavior, but not explicitly provides the rating of various songs from users. We adopt a simple solution that is using fractional count as the rating. Fractional count in the range of [0,1], which can measure the strength of “likeness” for a song for a user.
-
-   <img src="assets/Fractional_count.png" width = "50%" />
+   <img src="assets/Fractional_count.png" width = "50%" align = "center"/>
+   <div align = "center"> Fig.3 fractional_count </div>
    
 2. #### Data visualization
 
