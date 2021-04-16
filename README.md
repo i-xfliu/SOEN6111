@@ -49,9 +49,9 @@ Our datasets come from last.fm. There are two parts of dataset,
 
 ### Data Analysis
 
-1. #### Data cleaning
+1. #### Data Trimming
 
-   The listening history dataset is very huge, has 2000k records, which contains a large number of not useful data. So the first step is to extract useful data, intersection the listening history and songs dataset, thus we can just keep the history that has responding songs in the songs dataset. After the intersect operation, the listening history dataset is reduced to 800k lines and the songs dataset is reduced to 20k lines.
+   There are 2000k records in the Last.fm dataset, which contains a large number of not useful data. So the first step is to extract useful data, intersection the listening history and songs dataset, thus keepping the history that has responding songs in the songs dataset. After the intersect operation, the listening history dataset is reduced to 800k lines and the songs dataset is reduced to 20k lines.
 
    After data cleaning and extraction, we got a track metadata file, a play history data file, and a user profile data file. 
    In this project, for now, we just used the play history data to build recommendation systems.
