@@ -51,6 +51,7 @@ class load_lastfm_1k(object):
         # large single file
         filepath = "data/lastfm-dataset-1k/lastfm-dataset-1k.snappy.parquet"
         df_user_track = self.spark.read.parquet(filepath)
+        df_user_track.show()
         # print(df_user_track.count())
         # 19098862
         # ['user_id', 'timestamp', 'artist_id', 'artist_name', 'track_id', 'track_name']
@@ -149,8 +150,9 @@ class load_lastfm_1k(object):
         print("load_useful_history")
         # 8297836
         # ['index', 'user_id', 'timestamp', 'artist_id', 'artist_name', 'track_id', 'track_name']
-        print(df.count())
-        print(df.columns)
+        print("Rows:%d"%df.count())
+        # print(df.columns)
+        df.show()
         return df
 
 
@@ -162,8 +164,9 @@ class load_lastfm_1k(object):
         # ['index', 'track_id', 'title', 'song_id', 'release', 'artist_id',
         # 'artist_mbid', 'artist_name', 'duration',
         #  'artist_familiarity', 'artist_hotttnesss', 'year', 'track_7digitalid', 'shs_perf', 'shs_work']
-        print(df.count())
-        print(df.columns)
+        print("Rows:"+df.count())
+        print("columns:"+df.columns)
+        df.show()
         return df
 
 
