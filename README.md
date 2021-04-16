@@ -120,7 +120,7 @@ Our datasets come from last.fm. There are two parts of dataset,
    ##### Computing the score for recommendation
 
    For each recommended song, we select k most similar songs to compute the score.
-   
+
       <img src="assets/similarity.png" width = "60%" />
 
    
@@ -143,11 +143,11 @@ Our datasets come from last.fm. There are two parts of dataset,
    <img src="assets/Top_15_popular_songs.png" width = "65%" />
    
    ·   User play count distribution
-
+   
    <img src="assets/User_play_count_distribution.png" width = "70%" />
 
    ·   Track play count distribution
-
+   
    <img src="assets/track_play_count_distribution.png" width = "70%" />
 
    
