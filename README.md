@@ -55,10 +55,9 @@ Our datasets come from last.fm. There are two parts of dataset,
 
    After data cleaning and extraction, we got a track metadata file, a play history data file, and a user profile data file. 
    In this project, for now, we just used the play history data to build recommendation systems.
-   The original listening history data
-
-
    <img src="assets/the_original_listening_history_data.png" width = "70%" />
+   |  Fig1 The original listening history data  |
+|--|--|
 
    Because the dataset is too huge to fit our computer, so the first step of the data analysis is extracting the play history of the most popular songs. We extract 20% of top popular songs’ history. The next step is aggregating the play count by group by (user id, track id). Then we got a data file as below: (user, track, play_count)
 
