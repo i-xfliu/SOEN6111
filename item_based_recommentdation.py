@@ -7,7 +7,7 @@ from pyspark.sql.window import Window
 import pyspark.sql.functions as sf
 from pyspark.sql.functions import col
 from history_subset import *
-from pyspark.ml.feature import VectorAssembler
+from pyspark.ml.feature import VectorAssembler, MinHashLSH
 from pyspark.ml.feature import BucketedRandomProjectionLSH
 from pyspark.mllib.linalg import Vectors
 from pyspark.ml.linalg import SparseVector
@@ -41,11 +41,11 @@ class item_based_recommentdation(object):
     def generate_user_items_model(self):
         self.df = spark.read.parquet("lastfm_dataset/top_20_Percent_song_fractional_intID_history.parquet")
         (self.training, self.test) = self.df.randomSplit([0.8, 0.2], seed=100)
+
         self.train_matrix = self.get_matrix(self.training)
 
-
         # 根据test set 整理出一个song matrix vector*n
-        self.test = self.test.limit(2000)
+        self.test = spark.read.parquet("lastfm_dataset/test_5000.parquet")
         self.test.groupby('id_user').count().show()
 
         # self.test_matrix = self.get_matrix(self.test)
@@ -54,22 +54,21 @@ class item_based_recommentdation(object):
         print("test matrix")
         self.test_matrix.show();
 
-
+        # 1.如果test set 补全在train set中会不会有影响
         brp = BucketedRandomProjectionLSH(inputCol="features", outputCol="hashes", bucketLength=2.0,
                                           numHashTables=3)
         self.model = brp.fit(self.train_matrix)
 
-        self.model.transform(self.train_matrix)
 
 
 
     def get_matrix(self,df):
         # pair(id_track,(id_user,count))
         # option1: vector用count构造
-        # rdd = df.rdd.map(lambda x: (x.id_track, [(x.id_user, x['count'])]))
+        # rdd = df.rdd.map(lambda x: (x.id_track, [(x.id_user, x['fractional_count'])]))
         # option2: vector用0/1构造
         rdd = df.rdd.map(lambda x: (x.id_track, [(x.id_user, 1)]))
-        # pair(id_track,[(id_user,count),(id_user,count)])
+        # pair(id_track,[(id_user,fractional_count),(id_user,fractional_count)])
         rdd = rdd.reduceByKey(lambda a, b: a + b)
         print(rdd.first())
         # rdd = rdd.map(lambda x: (x[0], SparseVector(len(x[1]), x[1])))
@@ -85,13 +84,12 @@ class item_based_recommentdation(object):
         matrix_df.show()
         return matrix_df
 
-
     def get_test_all_user_items_pair(self, train_df, train_maxtrix, test_df):
         # 选取test集中所有用户的历史数据
         # 选出每个user 在training set的listening history
         # （）
         train_df = train_df.alias("a").join(
-            test_df.alias("b"), ['id_user']).select('a.id_user','a.id_track','a.count').distinct()
+            test_df.alias("b"), ['id_user']).select('a.id_user','a.id_track','a.count','a.fractional_count').distinct()
 
         # 历史数据加上feature
         matrix_df = train_df.join(train_maxtrix, ['id_track'])
@@ -118,39 +116,19 @@ class item_based_recommentdation(object):
         return score
 
 
-    def get_predict_score(self,id_user, train_df, train_matrix, test_matrix):
-        # approxNearestNeighbors 逐条计算test set中的track在training set的 2个NearestNeighbors
-        # 不能rdd并行计算 很慢
-        user_df = self.get_user_items(train_df, train_matrix, id_user)
-
-        score_rdd = test_matrix.rdd.map(
-            lambda pair: (pair[0], self.get_score(self.model.approxNearestNeighbors(user_df, pair[1], 2),train_df,id_user)))
-
-
-
     def get_predcit_single_user(self, id_user, train_df, train_matrix, test_matrix):
-        # approxSimilarityJoin 用距离表示相似度，距离越小越相似
-        # 一次计算一个user所有的test item
-
-        # 1.user_df user听过的歌曲
-        # 2.test_matrix要评估的歌曲 (所有要预测的歌曲)
-        # 3.approxSimilarityJoin(user_df, test_matrix, 200) user_df和test_matrix 中的feature两两求相似度
-        # 4.每个test song取两个距离最小的song， 根据这两首歌算test song的评估分数
-        # 5.计算所有的test song,然后按照得分对歌曲排序
-        # 6.排名评估
 
         user_df = self.get_user_items(train_df, train_matrix, id_user)
-        similar = self.model.approxSimilarityJoin(user_df, test_matrix, 200)
+        similar = self.model.approxSimilarityJoin(user_df, test_matrix, 1000, "JaccardDistance")
 
         similar = similar.select(col('datasetA.id_user').alias('id_user'),
                                  col('datasetA.id_track').alias('user_listen'),
                                  col('datasetA.count').alias('count'),
                                  col('datasetB.id_track').alias('test_song'),
                                  col('distCol')).where(col('user_listen') != col('test_song'))
-
         window = Window.partitionBy('test_song').orderBy('distCol')
-        # 每个test song 取两首最相似的歌曲
-        similar = similar.select('*', rank().over(window).alias('rank')).filter(col('rank') <= 2)
+        # select top k similar songs
+        similar = similar.select('*', rank().over(window).alias('rank')).filter(col('rank') <= 5)
         # id_user|user_listen|count|test_song|           distCol|rank|
         #      19|      20608|    1|     4590|               7.0|   1|
         #      19|      20927|    4|     4590| 8.306623862918075|   2|
@@ -162,34 +140,41 @@ class item_based_recommentdation(object):
 
     def get_predcit_multiple_users(self):
         # train_df, train_matrix, test_matrix, test
-        # 一次计算所有test user的所有test items
+        # computer the similarity for all of test track for each user on one go
         all_user_history_df = self.get_test_all_user_items_pair(self.training, self.train_matrix, self.test)
         track_num = self.test.select('id_track').distinct().count()
         user_num = self.test.select('id_user').distinct().count()
         print("track_num: %d" % track_num)
         print("user_num: %d" % user_num)
 
-        similar = self.model.approxSimilarityJoin(all_user_history_df, self.test_matrix, 200)
+
+        similar = self.model.approxSimilarityJoin(all_user_history_df, self.test_matrix, 1000, distCol="JaccardDistance")
 
         similar = similar.select(col('datasetA.id_user').alias('id_user'),
                                  col('datasetA.id_track').alias('user_listen'),
                                  col('datasetA.count').alias('count'),
+                                 col('datasetA.fractional_count').alias('fractional_count'),
                                  col('datasetB.id_track').alias('test_song'),
-                                 col('distCol')
+                                 # col('distCol')
+                                 col('JaccardDistance').alias('distCol')
                                  ).where(col('user_listen') != col('test_song'))
 
+        # similar.write.parquet("model/similar_matrix_5000test_jaccard.parquet")
+
         window = Window.partitionBy('id_user', 'test_song').orderBy('distCol')
-        # 选取相识度最小的两首歌
-        similar = similar.select('*', rank().over(window).alias('rank')).filter(col('rank') <= 2)
+        similar = similar.select('*', rank().over(window).alias('rank')).filter(col('rank') <= 5)
         # id_user|user_listen|count|test_song|           distCol|rank|
         #      19|      20608|    1|     4590|               7.0|   1|
         #      19|      20927|    4|     4590| 8.306623862918075|   2|
         print(similar.count())
+
         similar.show()
-        score_df = similar.withColumn('score', 1 / col('distCol') * col('count')).groupby('id_user', 'test_song').agg(
-            avg('score').alias('score'))
+        score_df = similar.withColumn('similar',  (1-col('distCol')))
+        score_df = score_df.withColumn('score_temp', col('similar') * col('count'))
+        score_df = score_df.groupby('id_user', 'test_song').agg(sum('score_temp').alias('sum_score'),sum((col('similar'))).alias('sum_similar'))
+        score_df = score_df.withColumn('score',  col('sum_score') / col('sum_similar'))
+        score_df.show()
         print(score_df.count())
-        # score_df.write.parquet("model/similar_score_2000test.parquet")
 
         score_df.sort('id_user').show()
         self.evaluate(score_df, self.test)
@@ -198,10 +183,11 @@ class item_based_recommentdation(object):
 
 
     def evaluate(self,predictions, test_df):
-        # predictions 没有标记哪首歌是test集中真的有听得
+        # predictions mark the the songs not be listened
         rank = predictions.withColumn('rank', row_number().over(Window.partitionBy('id_user').orderBy(desc('score'))))
 
         cond = [rank.id_user == test_df.id_user, rank.test_song == test_df.id_track]
+        # 展开 test df,
         predictions = rank.join(test_df, cond, how='left').drop(test_df.id_user).fillna(0)
 
 
@@ -212,14 +198,13 @@ class item_based_recommentdation(object):
         nolistend_song = predictions.where(col('count') == 0).groupby('id_user').agg(count('*').alias('not_listened'))
         listend_song.join(nolistend_song, on=['id_user']).show()
 
-        predictions.where(col('id_user') == 498).sort(col("rank")).show()
-        predictions.where(col('id_user') == 754).sort(col("rank")).show()
-        predictions.where(col('id_user') == 443).sort(col("rank")).show()
-        predictions.where(col('id_user') == 304).sort(col("rank")).show()
-        predictions.where(col('id_user') == 871).sort(col("rank")).show()
-        predictions.where(col('id_user') == 181).sort(col("rank")).show()
-        predictions.where(col('id_user') == 621).sort(col("rank")).show()
-
+        # predictions.where(col('id_user') == 498).sort(col("rank")).show()
+        # predictions.where(col('id_user') == 754).sort(col("rank")).show()
+        # predictions.where(col('id_user') == 443).sort(col("rank")).show()
+        # predictions.where(col('id_user') == 304).sort(col("rank")).show()
+        # predictions.where(col('id_user') == 871).sort(col("rank")).show()
+        # predictions.where(col('id_user') == 181).sort(col("rank")).show()
+        # predictions.where(col('id_user') == 621).sort(col("rank")).show()
 
         n_tracks = test_df.select('id_track').distinct().count()
         # predictions.withColumn('rank', row_number().over(Window.partitionBy('id_user').orderBy(desc('score'))))
@@ -243,9 +228,37 @@ class item_based_recommentdation(object):
 
         MPR.show()
 
-    def load_and_evalaute__similar_matrix(self):
-        # score_df = spark.read.parquet("model/similar_score_1000test.parquet")
-        score_df = spark.read.parquet("model/similar_score_2000test.parquet")
+
+        predictions = predictions.select('id_user', 'test_song', 'rank', 'track_id', 'count')
+        predictions.where(col('id_user') == 498).sort(col("rank")).show()
+        predictions.where(col('id_user') == 385).sort(col("rank")).show()
+        predictions.where(col('id_user') == 193).sort(col("rank")).show()
+        predictions.where(col('id_user') == 181).sort(col("rank")).show()
+        predictions.where(col('id_user') == 968).sort(col("rank")).show()
+        predictions.where(col('id_user') == 39).sort(col("rank")).show()
+
+
+
+    def load_and_evalaute_similar_matrix(self):
+
+        similar = spark.read.parquet("model/similar_matrix_5000test_jaccard.parquet")
+
+        window = Window.partitionBy('id_user', 'test_song').orderBy('distCol')
+
+        similar = similar.select('*', rank().over(window).alias('rank')).filter(col('rank') <= 5)
+        # id_user|user_listen|count|test_song|           distCol|rank|
+        #      19|      20608|    1|     4590|               7.0|   1|
+        #      19|      20927|    4|     4590| 8.306623862918075|   2|
+        print(similar.count())
+        similar.show()
+        score_df = similar.withColumn('similar',  (1-col('distCol')))
+        score_df = score_df.withColumn('score_temp', col('similar') * col('count'))
+        score_df = score_df.groupby('id_user', 'test_song').agg(sum('score_temp').alias('sum_score'),sum((col('similar'))).alias('sum_similar'))
+        score_df = score_df.withColumn('score',  col('sum_score') / col('sum_similar'))
+        score_df.show()
+        print(score_df.count())
+
+        score_df.sort('id_user').show()
         self.evaluate(score_df, self.test)
 
 
@@ -259,4 +272,4 @@ model.generate_user_items_model()
 # model.get_predcit_multiple_users()
 
 # loading from model file
-model.load_and_evalaute__similar_matrix()
+model.load_and_evalaute_similar_matrix()
