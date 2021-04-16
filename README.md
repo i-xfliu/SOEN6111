@@ -82,7 +82,7 @@ Our datasets come from last.fm. There are two parts of dataset,
 
 1. #### Item-based recommendation engine
 
-   For implementing item-based collaborative filtering, we need two kinds of data, users feature and items feature. Feature engineering can help, our plan is to extract song features and user features from the song-tag dataset and user listening history. When data is ready, we can build a song-user matrix.
+   To implement item-based collaborative filtering, we need two kinds of data, users feature and items feature. Our plan is to extract song features and user features from the song-tag dataset and user listening history. When data is ready, we can build a song-user matrix. 
 
    We used pyspark to implement the item-based recommendation model. 
 
@@ -94,21 +94,28 @@ Our datasets come from last.fm. There are two parts of dataset,
    rdd = rdd.map(lambda x: (x[0], SparseVector(1000, x[1])))
    matrix = spark.createDataFrame(rdd, ['id_track', 'features'])
    ```
+   <div align = "center">
       <img src="assets/Building_a_utility_matrix.png" width = "70%" />
+   </div>
+   <div align = "center"> Fig.4 Build a matrix </div>
 
    If user1 has listened to track1 then unit[track1, user1] set as 1, otherwise set as 0. Because the feature rows are long and sparse, so we use the sparse vector for it.
 
    ##### Computing similarity of songs
 
    Considering the scale of the dataset and evaluation metric, we used the function approxSimilarityJoin() in the pyspark to compute the similarity of all recommended songs with other songs for all test users in one go.
-
+   <div align = "center">
       <img src="assets/approxSimilarityJoin.png" width = "70%" />
+    </div>
+   <div align = "center"> Fig.5 Compute the similarity </div>
 
    ##### Computing the score for recommendation
 
-   For each recommended song, we select k most similar songs to compute the score.
+   For each recommended song, we select k most similar songs to compute the score. The similarity score is calculated as
+      <img src="assets/similarity.png" width = "30%" />
 
-      <img src="assets/similarity.png" width = "60%" />
+
+   
 
    
 
