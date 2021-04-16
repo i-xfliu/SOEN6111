@@ -11,10 +11,10 @@ from pyspark.ml.recommendation import ALS, ALSModel
 
 # https://colab.research.google.com/drive/1Ugrwtt9uab7PWnAKXuUrerUXuZqNk1no#scrollTo=8ENiRclJJv8k
 
-# 1. loading dataset - "lastfm_dataset/top_20_Percent_song_fractional_intID_history.parquet" （之前整理好的df）
+# 1. loading dataset - "lastfm_dataset/top_20_Percent_song_fractional_intID_history.parquet"
 # 5. train ALS model
 # 6. parameter : userCol="id_user", itemCol="id_track", ratingCol="count", implicitPrefs=True
-# 7. evaluation:  using Mean Percentage Ranking ( 𝑀𝑃𝑅 )  - http://yifanhu.net/PUB/cf.pdf 论文中推荐的评估方法
+# 7. evaluation:  using Mean Percentage Ranking ( 𝑀𝑃𝑅 )  - http://yifanhu.net/PUB/cf.pdf
 
 
 def init_spark():
@@ -32,8 +32,13 @@ def evaluate(predictions,test_full):
     print("MPR step 1")
     # print(test1.count())
     # test1.sort(col("count").desc()).show()
-    test1.where(col('id_user') == 541).sort(col("rank")).show()
+    test1 = test1.select('id_user','id_track','rank','track_id','count')
+    test1.where(col('id_user') == 498).sort(col("rank")).show()
+    test1.where(col('id_user') == 385).sort(col("rank")).show()
+    test1.where(col('id_user') == 193).sort(col("rank")).show()
     test1.where(col('id_user') == 181).sort(col("rank")).show()
+    test1.where(col('id_user') == 968).sort(col("rank")).show()
+    test1.where(col('id_user') == 39).sort(col("rank")).show()
 
 
     n_tracks = test_full.select('id_track').distinct().count()
@@ -72,23 +77,17 @@ def ALS_trainImplicit():
 
     # model.save("model/als_implicit_top20per_song.model")
 
+    test_full = spark.read.parquet("lastfm_dataset/test_full_5000.parquet")
 
-    test = test.limit(2000)
-    print(test.select("id_user").distinct().count())
-    print(test.select("id_track").distinct().count())
-    print(test.select("id_track"))
 
-    test_full = (
-        test.select('id_user').distinct()
-            .crossJoin(test.select('id_track').distinct())
-            .join(test, on=['id_user', 'id_track'], how='left')
-            .fillna(0, subset=['count'])
-            .cache()
-    )
+    print("test user num: %d" % test_full.select("id_user").distinct().count())
+    print("make recomendation for ecah user from how many songs :%d" % test_full.select("id_track").distinct().count())
 
-    listend_song =  test_full.where(col('count') > 0).groupby('id_user').agg(count('*').alias('listened_song'))
-    nolistend_song = test_full.where(col('count') == 0).groupby('id_user').agg(count('*').alias('not_listened'))
-    listend_song.join(nolistend_song,on=['id_user']).show()
+    listend_song = test_full.where(col('fractional_count') > 0).groupby('id_user').agg(
+        count('*').alias('listened_song'))
+    nolistend_song = test_full.where(col('fractional_count') == 0).groupby('id_user').agg(
+        count('*').alias('not_listened'))
+    listend_song.join(nolistend_song, ['id_user']).show()
 
     predictions = model.transform(test_full)
     evaluate(predictions,test_full)
@@ -96,28 +95,22 @@ def ALS_trainImplicit():
 
 def loading_and_evaluate_model():
     df = spark.read.parquet("lastfm_dataset/top_20_Percent_song_fractional_intID_history.parquet")
-    # 用seed 保持数据一致
+
     (training, test) = df.randomSplit([0.8, 0.2],seed=100)
     model = ALSModel.load("model/als_implicit_top20per_song.model")
 
-    test = test.limit(2000)
-    # test 可以换一个方式抽样，每个用户抽取20首歌，总共50歌用户
-    print(test.select("id_user").distinct().count())
-    print(test.select("id_track").distinct().count())
-    print(test.select("id_track"))
+    test_full = spark.read.parquet("lastfm_dataset/test_full_5000.parquet")
 
-    test_full = (
-        test.select('id_user').distinct()
-            .crossJoin(test.select('id_track').distinct())
-            .join(test, on=['id_user', 'id_track'], how='left')
-            .fillna(0, subset=['count'])
-            .cache()
-    )
+    print("test user num: %d" % test_full.select("id_user").distinct().count())
+    print("make recomendation for ecah user from how many songs :%d" % test_full.select("id_track").distinct().count())
 
-    listend_song =  test_full.where(col('count') > 0).groupby('id_user').agg(count('*').alias('listened_song'))
-    nolistend_song = test_full.where(col('count') == 0).groupby('id_user').agg(count('*').alias('not_listened'))
-    listend_song.join(nolistend_song,on=['id_user']).show()
-
+    listend_song = test_full.where(col('fractional_count') > 0).groupby('id_user').agg(
+        count('*').alias('listened_song'))
+    nolistend_song = test_full.where(col('fractional_count') == 0).groupby('id_user').agg(
+        count('*').alias('not_listened'))
+    listend_song = listend_song.join(nolistend_song, ['id_user'])
+    listend_song.show()
+    listend_song.where(listend_song.id_user.isin(['498', '385', '193', '181','968','39'])).show()
 
     # predictions = model.transform(test_full).na.drop()
     predictions = model.transform(test_full)
@@ -128,7 +121,7 @@ def loading_and_evaluate_model():
 
 
 # train a new model
-ALS_trainImplicit()
+# ALS_trainImplicit()
 
 # loading from model file
-# loading_and_evaluate_model()
+loading_and_evaluate_model()
