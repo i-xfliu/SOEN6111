@@ -66,7 +66,7 @@ Our datasets come from last.fm. There are two parts of dataset,
    <div align = "center"> Fig.2 Trimmed dataset </div>
    
 
-   The playing history dataset is an "implicit feedback" dataset, which reflects users’ behavior, but not explicitly provides the rating of various songs from users. We adopt a simple solution that is using fractional count as the rating. Fractional count in the range of [0,1], which can measure the strength of “likeness” for a song for a user.
+   The playing history dataset is an "implicit feedback" dataset, which reflects users’ behavior, but not explicitly provides the rating of various songs from users. We adopt a simple solution that is using fractional count as the rating. Fractional count in the range of [0,1], which can measure the strength of “likeness” for a song for a user [6].
    <div  align = "center">
    <img src="assets/Fractional_count.png" width = "50%" align = "center"/>
    </div>
@@ -115,45 +115,114 @@ Our datasets come from last.fm. There are two parts of dataset,
       <img src="assets/similarity.png" width = "30%" />
 
 
-   
 
-   
+
+
 
 2. #### Matrix factorization-based collaborative filtering
 
    The users listening history is a user behavior dataset, which doesn't explicitly reflect the taste of users, thus it's called implicit feedback. If we use the statistic method to construct user preferences directly, it will lose some information contained in listening history. For implicit feedback, we use matrix factorization-based collaborative filtering to implement a recommendations system. Apache Spark ML implements ALS for collaborative filtering, a very popular algorithm for making recommendations. ALS recommender is a matrix factorization algorithm that uses Alternating Least Squares with Weighted-Lamda-Regularization (ALS-WR). It factors the user to item matrix A into the user-to-feature matrix U and the item-to-feature matrix M: It runs the ALS algorithm in a parallel fashion. The ALS algorithm should uncover the latent factors that explain the observed user to item ratings and tries to find optimal factor weights to minimize the least squares between predicted and actual ratings. [N1]. 
    ##### Train model
+   
+   Explicit model 
+   
+   Setting implicitPrefs =False, ratingCol="fractional_count" (using fractional_count replace explicit rating)
+   
     ```
-   ALS(maxIter=5, regParam=0.01, userCol="id_user", itemCol="id_track", ratingCol="count",
-              implicitPrefs=True,
+   ALS(maxIter=5, regParam=0.01, userCol="id_user", itemCol="id_track",
+   					 ratingCol="fractional_count",
+              implicitPrefs=False,
               coldStartStrategy="drop")
    model = als.fit(training)
     ```
-   ##### 
+   Implicit model 
+   
+   Setting implicitPrefs =Ture, ratingCol="count"
+   
+   ```
+   ALS(maxIter=5, regParam=0.01, userCol="id_user", itemCol="id_track", ratingCol="count",
+             implicitPrefs=True,
+             coldStartStrategy="drop")
+   ```
+   
+   
+   
 3. #### Evaluation
 
-   We will use some metrics to elevalute the models, such as recall, precise, mAP and AUC.
+   In our project, we implemented three different recommendation models, the item-based model, ALS(explicit) model, and ALS(implicit) model. Each model computes a score for each recommending item, we cannot directly compare the score, but we can compare the ranking performance. Mean Percentage Ranking (𝑀𝑃𝑅) is a good choice for us. In Collaborative Filtering for Implicit Feedback Datasets, which's author proposes using 𝑀𝑃𝑅 as an evaluation metric for Collaborative Filtering recommender systems[7].
 
 ## Results
 
 ### Data visualization
 
    ·   Top 15 popular songs
-   
+
    <img src="assets/Top_15_popular_songs.png" width = "65%" />
-   
-   ·   User play count distribution
-   
+
+   ·   Distribution of users' play count
+
    <img src="assets/User_play_count_distribution.png" width = "70%" />
 
-   ·   Track play count distribution
-   
+   ·   Distribution of play count of tracks 
+
    <img src="assets/track_play_count_distribution.png" width = "70%" />
-   
+
+​		From this figure, we can see that 80% of songs are rarely played by users.
+
+### Evalustion
+For comparing three models' performance, we created a test dataset, which contains 63 users and 2234  songs, each user has listened to part of the songs in the test dataset.
+
+```
++-------+-------------+------------+
+|id_user|listened_song|not_listened|
++-------+-------------+------------+
+|    385|           78|        2156|
+|     39|           61|        2173|
+|    181|           81|        2153|
+|    193|           73|        2161|
+|    968|           35|        2199|
+|    498|          162|        2072|
+```
+
+The models predict the scores for two thousand songs for each user, and compute the MPR.
+
+Firstly, let's look at the comparison of the recommendation made by different models for individual users.
+
+User no.39,  in the test dataset, has listened to 61 songs and 2173 songs never listened to. 
+
+In the top 20 recommendation, the item-based model hit one song on rank 18th, the ALS(explicit) model hit one song on rank 15th, and the ALS(implicit) model hits two songs on rank 9th and 10th. So, for user 39, ALS(implicit) made the best recommendation.
+
+<img src="assets/compare_user_39.png" width = "90%" />
+
+Then, we can compute the Mean Percentage Ranking (𝑀𝑃𝑅) by using all of the users' ranking lists.
+
+```
++------------------+-------------------+
+|       model      |                MPR|             
++------------------+-------------------+
+|Item-based        |0.4685394411190549 |
++------------------+-------------------+
+|ALS(explicit)     |0.4527974407436818 |
++------------------+-------------------+
+|ALS(implicit)     |0.2591561751108617 |
++------------------+-------------------+
+```
+
+MPR is smaller the performance is better, which means the ranking is higher, the recommendation is more precise. So from the above figure, we can see that ALS(implicit) model has the best performance. the second one is ALS(explicit), and the item-based model is the worst.
+
+It's no surprise that ALS(implicit) model performs best because the dataset we used is an implicit feedback dataset, which reflects users' behavior. The algorithm of the ALS(implicit) model can predict the probability for recommending items by digesting the implicit feedback in the dataset. The ALS(explicit) model, in this dataset, tries to predict fractional play count( is still play count) for recommending items, but we know that play counts are more uncertain compared to movie rating. So ALS(explicit) model wants to predict the uncertain play counts precisely which is a contradiction. For the item-based model, there is the same problem, the model can not well represent the implicit feedback dataset.
+
+
+
  ## Discussion
- 
- After we evaluated the list of recommended movies, we quickly identified two obvious limitations in our KNN approach. One is the “popularity bias”, the other is “item cold-start problem”. Popularity bias: refers to system recommends the movies with the most interactions without any personalization
-item cold-start problem: refers to when movies added to the catalogue have either none or very little interactions while recommender rely on the movie’s interactions to make recommendations. In a real world setting, the vast majority of movies receive very few or even no ratings at all by users. We are looking at an extremely sparse matrix with more than 99% of entries are missing values.
+
+After we evaluated the list of recommended movies, we quickly identified two obvious limitations in our KNN approach. One is the “popularity bias”, the other is “item cold-start problem”. Popularity bias: refers to system recommends the movies with the most interactions without any personalization
+item cold-start problem: refers to when movies added to the catalogue have either none or very little interactions while recommender rely on the movie’s interactions to make recommendations. In a real world setting, the vast majority of movies receive very few or even no ratings at all by users. We are looking at an extremely sparse matrix with more than 99% of entries are missing values. 
+
+1. ALS（implicit）表现突出
+
+2. 建议说一下implicit的数据，implicit比explicit的数据更容易获得 更广泛
+3. possible future work，可以尝试加入更多的feature，目前只是用了play history， 我们还有track megadata，和user profile
 
    
 
@@ -172,6 +241,10 @@ item cold-start problem: refers to when movies added to the catalogue have eithe
 [5] last.fm, https://www.last.fm/home
 
 [n1] Alternating Least Squares (ALS) Spark ML, Elena Cuoco,  https://www.elenacuoco.com/2016/12/22/alternating-least-squares-als-spark-ml/?cn-reloaded=1
+
+[6] Exl, Lukas, Johann Fischbacher, Alexander Kovacs, Harald Oezelt, Markus Gusenbauer, Kazuya Yokota, Tetsuya Shoji, Gino Hrkac, and Thomas Schrefl. "Magnetic microstructure machine learning analysis." *Journal of Physics: Materials* 2, no. 1 (2018): 014001. P447
+
+[7] ALS Matrix Factorization in Spark.ipynb https://colab.research.google.com/drive/1Ugrwtt9uab7PWnAKXuUrerUXuZqNk1no#scrollTo=MQX_vUJalKX9
 
 
 
