@@ -51,6 +51,37 @@ def load_most_popular_song_listen_history():
 
 
 
+def load_most_active_users(k):
+    history_df = load_lastfm_1k().load_useful_history()
+    # 8297836
+    # ['index', 'user_id', 'timestamp', 'artist_id', 'artist_name', 'track_id', 'track_name']
+    #group by track_id
+    user_groupby = history_df.groupby('user_id').count().orderBy(col("count").desc())
+    user_groupby.show()
+    # 'track_id','track_name','count'
+    user_groupby = user_groupby.limit(k)
+    return user_groupby
+
+def load_users_placy_count():
+    history_df = load_lastfm_1k().load_useful_history()
+    # 8297836
+    # ['index', 'user_id', 'timestamp', 'artist_id', 'artist_name', 'track_id', 'track_name']
+    #group by track_id
+    user_groupby = history_df.groupby('user_id').count().orderBy(col("count").desc())
+    user_groupby.show()
+    # 'track_id','track_name','count'
+    return user_groupby
+
+def load_tracks_placy_count():
+    history_df = load_lastfm_1k().load_useful_history()
+    # 8297836
+    # ['index', 'user_id', 'timestamp', 'artist_id', 'artist_name', 'track_id', 'track_name']
+    #group by track_id
+    track_groupby = history_df.groupby('track_id').count().orderBy(col("count").desc())
+    track_groupby.show()
+    # 'track_id','track_name','count'
+    return track_groupby
+
 def load_top_20_song_history():
 
     history_df = spark.read.parquet("lastfm_dataset/top_20_percent_song_history.parquet")
