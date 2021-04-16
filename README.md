@@ -121,9 +121,15 @@ Our datasets come from last.fm. There are two parts of dataset,
 
 2. #### Matrix factorization-based collaborative filtering
 
-   The users listening history is a user behavior dataset, which doesn't explicitly reflect the taste of users, thus it's called implicit feedback. If we use the statistic method to construct user preferences, can lose some information contained in listening history. 
-   For implicit feedback, we can use matrix factorization-based collaborative filtering to implement a recommendations system. Spark.mllib.recommendation.ALS model is a good choice to handle implicit feedback dataset, the model can find latent factors in the listening history dataset.
-
+   The users listening history is a user behavior dataset, which doesn't explicitly reflect the taste of users, thus it's called implicit feedback. If we use the statistic method to construct user preferences directly, it will lose some information contained in listening history. For implicit feedback, we use matrix factorization-based collaborative filtering to implement a recommendations system. Apache Spark ML implements ALS for collaborative filtering, a very popular algorithm for making recommendations. ALS recommender is a matrix factorization algorithm that uses Alternating Least Squares with Weighted-Lamda-Regularization (ALS-WR). It factors the user to item matrix A into the user-to-feature matrix U and the item-to-feature matrix M: It runs the ALS algorithm in a parallel fashion. The ALS algorithm should uncover the latent factors that explain the observed user to item ratings and tries to find optimal factor weights to minimize the least squares between predicted and actual ratings. [N1]. 
+   ##### Train model
+    ```
+   ALS(maxIter=5, regParam=0.01, userCol="id_user", itemCol="id_track", ratingCol="count",
+              implicitPrefs=True,
+              coldStartStrategy="drop")
+   model = als.fit(training)
+    ```
+   ##### 
 3. #### Evaluation
 
    We will use some metrics to elevalute the models, such as recall, precise, mAP and AUC.
@@ -143,6 +149,11 @@ Our datasets come from last.fm. There are two parts of dataset,
    ·   Track play count distribution
    
    <img src="assets/track_play_count_distribution.png" width = "70%" />
+   
+ ## Discussion
+ 
+ After we evaluated the list of recommended movies, we quickly identified two obvious limitations in our KNN approach. One is the “popularity bias”, the other is “item cold-start problem”. Popularity bias: refers to system recommends the movies with the most interactions without any personalization
+item cold-start problem: refers to when movies added to the catalogue have either none or very little interactions while recommender rely on the movie’s interactions to make recommendations. In a real world setting, the vast majority of movies receive very few or even no ratings at all by users. We are looking at an extremely sparse matrix with more than 99% of entries are missing values.
 
    
 
@@ -159,6 +170,8 @@ Our datasets come from last.fm. There are two parts of dataset,
 [4] Thierry Bertin-Mahieux, Daniel P.W. Ellis, Brian Whitman, and Paul Lamere, June 14, 2016, "Million Song Dataset", IEEE Dataport, doi: https://dx.doi.org/10.5072/FK27D2W31V.
 
 [5] last.fm, https://www.last.fm/home
+
+[n1] Alternating Least Squares (ALS) Spark ML, Elena Cuoco,  https://www.elenacuoco.com/2016/12/22/alternating-least-squares-als-spark-ml/?cn-reloaded=1
 
 
 
