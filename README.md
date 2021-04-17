@@ -169,7 +169,7 @@ Our datasets come from last.fm. There are two parts of dataset,
 
 ​		From this figure, we can see that 80% of songs are rarely played by users.
 
-### Evalustion
+### Evaluation
 For comparing three models' performance, we created a test dataset, which contains 63 users and 2234  songs, each user has listened to part of the songs in the test dataset.
 
 ```
