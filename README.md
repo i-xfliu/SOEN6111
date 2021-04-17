@@ -147,7 +147,7 @@ Our datasets come from last.fm. There are two parts of dataset,
    
    
    
-3. #### Evaluation
+3. #### Evaluation Technology
 
    In our project, we implemented three different recommendation models, the item-based model, ALS(explicit) model, and ALS(implicit) model. Each model computes a score for each recommending item, we cannot directly compare the score, but we can compare the ranking performance. Mean Percentage Ranking (𝑀𝑃𝑅) is a good choice for us. In Collaborative Filtering for Implicit Feedback Datasets, which's author proposes using 𝑀𝑃𝑅 as an evaluation metric for Collaborative Filtering recommender systems[7].
 
@@ -202,7 +202,7 @@ Then, we can compute the Mean Percentage Ranking (𝑀𝑃𝑅) by using all of 
 +------------------+-------------------+
 |       model      |                MPR|             
 +------------------+-------------------+
-|Item-based        |0.4685394411190549 |
+|Item-based        |0.4187396245456742 |
 +------------------+-------------------+
 |ALS(explicit)     |0.4527974407436818 |
 +------------------+-------------------+
