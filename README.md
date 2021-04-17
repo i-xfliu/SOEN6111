@@ -99,7 +99,7 @@ Our datasets come from last.fm. There are two parts of dataset,
    </div>
    <div align = "center"> Fig.4 Build a matrix </div>
 
-   If user1 has listened to track1 then unit[track1, user1] set as 1, otherwise set as 0. Because the feature rows are long and sparse, so we use the sparse vector for it.
+   If user1 has listened to track1 then unit[track1, user1] set as 1, otherwise set as 0, and there is the other option is set unit[track1, user1] set as play count. Because the feature rows are long and sparse, so we use the sparse vector for it.
 
    ##### Computing similarity of songs
 
