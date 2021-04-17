@@ -1,13 +1,3 @@
-
-
-1. 数据源 和 清理数据的过程
-2. 数据可视化
-3. ALS_explicit, ALS_implicit, item_based_recommentdation
-3. 三个算法 具体描述一下 怎么实现的，（latent 算法给出公式）
-4. 评估方法的 公式
-5. 用了哪些工具
-
-
 test user num: 63
 make recomendation for ecah user from how many songs :2234
 +-------+-------------+------------+
