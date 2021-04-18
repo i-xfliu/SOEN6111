@@ -13,6 +13,7 @@ from pyspark.mllib.linalg import Vectors
 from pyspark.ml.linalg import SparseVector
 from pyspark.sql.types import FloatType
 from scipy.spatial import distance
+from sklearn.metrics import pairwise_distances
 
 
 
@@ -63,11 +64,12 @@ class item_based_recommentdation(object):
 
 
     def get_matrix(self,df):
+        limitation = 8
         # pair(id_track,(id_user,count))
         # option1: vector用count构造
-        # rdd = df.rdd.map(lambda x: (x.id_track, [(x.id_user, x['fractional_count'])]))
+        rdd = df.rdd.filter(lambda x: x['count'] > limitation).map(lambda x: (x.id_track, [(x.id_user, x['count'])]))
         # option2: vector用0/1构造
-        rdd = df.rdd.map(lambda x: (x.id_track, [(x.id_user, 1)]))
+        #rdd = df.rdd.map(lambda x: (x.id_track, [(x.id_user, 1)]))
         # pair(id_track,[(id_user,fractional_count),(id_user,fractional_count)])
         rdd = rdd.reduceByKey(lambda a, b: a + b)
         print(rdd.first())
@@ -120,7 +122,7 @@ class item_based_recommentdation(object):
 
         user_df = self.get_user_items(train_df, train_matrix, id_user)
         similar = self.model.approxSimilarityJoin(user_df, test_matrix, 1000, "JaccardDistance")
-
+        items_similarity = pairwise_distances(train_matrix.T, metric='cosine')
         similar = similar.select(col('datasetA.id_user').alias('id_user'),
                                  col('datasetA.id_track').alias('user_listen'),
                                  col('datasetA.count').alias('count'),
