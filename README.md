@@ -15,7 +15,7 @@ The second problem we are to solve is the 'rating' problem. We don't have an int
 Range [0,1].
 
 As a comparision, we will try the other algorithm, namely Matrix factorization-based collaborative filtering, which can directly use user-item interaction matrix as training data.
-Matrix factorization can be used to discover latent features between two different kinds of entities\cite{}.Converting our dataframe into a numpy matrix in the format of utility matrix is the problem to be solved. 
+Matrix factorization can be used to discover latent features between two different kinds of entities\cite{NN}.Converting our dataframe into a numpy matrix in the format of utility matrix is the problem to be solved. 
 
 
 
@@ -149,7 +149,7 @@ Our datasets come from last.fm. There are two parts of dataset,
    
 3. #### Evaluation Technology
 
-   In our project, we implemented three different recommendation models, the item-based model, ALS(explicit) model, and ALS(implicit) model. Each model computes a score for each recommending item, we cannot directly compare the score, but we can compare the ranking performance. Mean Percentage Ranking (𝑀𝑃𝑅) is a good choice for us. In Collaborative Filtering for Implicit Feedback Datasets, which's author proposes using 𝑀𝑃𝑅 as an evaluation metric for Collaborative Filtering recommender systems[7]. Why do we use MPR not RMSE or other metrics here? Since for implicit feedback, it is important to realize that we don't have a solid feedback on which items users don't like. There are many reasons for not listening. Thus, precision based metrics, such as RMSE and MSE, are not very appropriate, as they require knowing which items users dislike for it to make sense[N2] In order to make these three feedbacks comparable， we use MPR as a global metric to evaluate the performances.
+   In our project, we implemented three different recommendation models, the item-based model, ALS(explicit) model, and ALS(implicit) model. Each model computes a score for each recommending item, we cannot directly compare the score, but we can compare the ranking performance. Mean Percentage Ranking (𝑀𝑃𝑅) is a good choice for us. In Collaborative Filtering for Implicit Feedback Datasets, which's author proposes using 𝑀𝑃𝑅 as an evaluation metric for Collaborative Filtering recommender systems[7]. Why do we use MPR not RMSE or other metrics here? Since for implicit feedback, it is important to realize that we don't have a solid feedback on which items users don't like. There are many reasons for not listening. Thus, precision based metrics, such as RMSE and MSE, are not very appropriate, as they require knowing which items users dislike for it to make sense[N2] In order to make these three feedbacks comparable，we use MPR as a global metric to evaluate the performances.
 
 ## Results
 
