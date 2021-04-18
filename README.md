@@ -155,9 +155,12 @@ Our datasets come from last.fm. There are two parts of dataset,
 
 ### Data visualization
 
-   ·   Top 15 popular songs
-
+   ·   We use pandas to plot the top 15 popular songs Top 15 popular songs
+  <div align = "center">
    <img src="assets/Top_15_popular_songs.png" width = "65%" />
+  </div>
+   <div align = "center"> Fig.6 Top 15 popular songs </div>
+  
 
    ·   Distribution of users' play count
 
