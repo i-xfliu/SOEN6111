@@ -210,6 +210,8 @@ In the top 20 recommendation, the item-based model hit one song on rank 18th, th
  <div align = "center">
 <img src="assets/compare_user_181.png" width = "88%" />
    </div>
+   
+   <div align="center"> Fig.8 Comparsion of the result </div>
 
 Then, we can compute the Mean Percentage Ranking (𝑀𝑃𝑅) by using all of the users' ranking lists.
 
