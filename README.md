@@ -168,8 +168,19 @@ Our datasets come from last.fm. There are two parts of dataset,
    </div>
    <div align = "center"> Fig.7 Distribution of play count of tracks  </div>
    
+    ```
+             play count
+count  159913.000000
+mean       51.889690
+std       313.052664
+min         1.000000
+25%         2.000000
+50%         7.000000
+75%        26.000000
+max     62913.000000
+     ```
 
-​		From this figure, we can see that 80% of songs are rarely played by users.
+​		We can see that the median play count is 7. This provides us with some important information about how the number of times a song is played is distributed. We see that on average, a song will be played more than 50 times, but in terms of median, 50% of the songs only play less than seven times. Therefore, in order to improve the processing fficiency and recommendation accuracy, we will only evaluate the songs with the top 20% play count.
 
 ### Evaluation
 For comparing three models' performance, we created a test dataset, which contains 63 users and 2234  songs, each user has listened to part of the songs in the test dataset.
@@ -193,10 +204,13 @@ Firstly, let's look at the comparison of the recommendation made by different mo
 User no.39,  in the test dataset, has listened to 61 songs and 2173 songs never listened to. 
 
 In the top 20 recommendation, the item-based model hit one song on rank 18th, the ALS(explicit) model hit one song on rank 15th, and the ALS(implicit) model hits two songs on rank 9th and 10th. So, for user 39, ALS(implicit) made the best recommendation.
-
+ <div align = "center">
 <img src="assets/compare_user_39.png" width = "90%" />
+  </div>
 
+ <div align = "center">
 <img src="assets/compare_user_181.png" width = "88%" />
+   </div>
 
 Then, we can compute the Mean Percentage Ranking (𝑀𝑃𝑅) by using all of the users' ranking lists.
 
