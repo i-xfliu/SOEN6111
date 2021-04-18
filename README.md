@@ -149,7 +149,7 @@ Our datasets come from last.fm. There are two parts of dataset,
    
 3. #### Evaluation Technology
 
-   In our project, we implemented three different recommendation models, the item-based model, ALS(explicit) model, and ALS(implicit) model. Each model computes a score for each recommending item, we cannot directly compare the score, but we can compare the ranking performance. Mean Percentage Ranking (𝑀𝑃𝑅) is a good choice for us. In Collaborative Filtering for Implicit Feedback Datasets, which's author proposes using 𝑀𝑃𝑅 as an evaluation metric for Collaborative Filtering recommender systems[7].
+   In our project, we implemented three different recommendation models, the item-based model, ALS(explicit) model, and ALS(implicit) model. Each model computes a score for each recommending item, we cannot directly compare the score, but we can compare the ranking performance. Mean Percentage Ranking (𝑀𝑃𝑅) is a good choice for us. In Collaborative Filtering for Implicit Feedback Datasets, which's author proposes using 𝑀𝑃𝑅 as an evaluation metric for Collaborative Filtering recommender systems[7]. Why do we use MPR not RMSE or other metrics here? Since for implicit feedback, it is important to realize that we don't have a solid feedback on which items users don't like. There are many reasons for not listening. Thus, precision based metrics, such as RMSE and MSE, are not very appropriate, as they require knowing which items users dislike for it to make sense[N2] In order to make these three feedbacks comparable， we use MPR as a global metric to evaluate the performances.
 
 ## Results
 
@@ -213,9 +213,9 @@ Then, we can compute the Mean Percentage Ranking (𝑀𝑃𝑅) by using all of 
 +------------------+-------------------+
 ```
 
-MPR is smaller the performance is better, which means the ranking is higher, the recommendation is more precise. So from the above figure, we can see that ALS(implicit) model has the best performance. the second one is ALS(explicit), and the item-based model is the worst.
+As metioned in the context, to make these three feedbacks comparable， we use MPR as a global metric to evaluate the performances. The smaller MPR is, the better performance is. So from the above figure, we can see that ALS(implicit) model has the best performance. the second one is item-based model, and the ALS(explicit) is the worst.
 
-It's no surprise that ALS(implicit) model performs best because the dataset we used is an implicit feedback dataset, which reflects users' behavior. The algorithm of the ALS(implicit) model can predict the probability for recommending items by digesting the implicit feedback in the dataset. The ALS(explicit) model, in this dataset, tries to predict fractional play count( is still play count) for recommending items, but we know that play counts are more uncertain compared to movie rating. So ALS(explicit) model wants to predict the uncertain play counts precisely which is a contradiction. For the item-based model, there is the same problem, the model can not well represent the implicit feedback dataset.
+It's no surprise that ALS(implicit) model performs best because the dataset we used is an implicit feedback dataset, which reflects users' behavior. The algorithm of the ALS(implicit) model can predict the probability for recommending items by digesting the implicit feedback in the dataset. The ALS(explicit) model, in this dataset, tries to predict fractional play count( is still play count) for recommending items, but we know that play counts are more uncertain compared to explicit rating. So ALS(explicit) model wants to predict the uncertain play counts precisely which is a contradiction. For the item-based model, there is the same problem, the model can not well represent the implicit feedback dataset.
 
 
 
