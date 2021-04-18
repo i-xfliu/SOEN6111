@@ -162,13 +162,12 @@ Our datasets come from last.fm. There are two parts of dataset,
    <div align = "center"> Fig.6 Top 15 popular songs </div>
   
 
-   ·   Distribution of users' play count
-
-   <img src="assets/User_play_count_distribution.png" width = "70%" />
-
    ·   Distribution of play count of tracks 
-
-   <img src="assets/track_play_count_distribution.png" width = "70%" />
+   <div align = "center">
+   <img src="assets/play_count.png" width = "70%" />
+   </div>
+   <div align = "center"> Fig.7 Distribution of play count of tracks  </div>
+   
 
 ​		From this figure, we can see that 80% of songs are rarely played by users.
 
